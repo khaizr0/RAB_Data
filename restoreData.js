@@ -1,9 +1,10 @@
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
-const { CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
-const { PutCommand } = require('@aws-sdk/lib-dynamodb');
-const { client, docClient } = require('../config/dynamodb');
+const { DynamoDBClient, CreateTableCommand, DescribeTableCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const fs = require('fs');
 const path = require('path');
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-southeast-1' });
+const docClient = DynamoDBDocumentClient.from(client);
 
 const tableSchemas = {
     User: {
@@ -63,14 +64,7 @@ async function waitForTables(tableNames) {
 }
 
 async function restoreData(backupFile) {
-    let filePath;
-    if (path.isAbsolute(backupFile)) {
-        filePath = backupFile;
-    } else if (backupFile.startsWith('RAB_Data/')) {
-        filePath = path.join(process.cwd(), backupFile);
-    } else {
-        filePath = path.join(__dirname, backupFile);
-    }
+    const filePath = path.isAbsolute(backupFile) ? backupFile : backupFile;
     
     if (!fs.existsSync(filePath)) {
         console.error(`✗ Backup file not found: ${filePath}`);
