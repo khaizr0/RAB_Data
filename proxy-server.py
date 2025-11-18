@@ -19,7 +19,7 @@ def load_env():
         print('  Please create .env file with:')
         print('  ADMIN_SERVICE_URL=http://YOUR_ADMIN_IP:3001')
         print('  CUSTOMER_SERVICE_URL=http://localhost:3000')
-        print('  PROXY_PORT=80')
+        print('  PROXY_PORT=3001')
         sys.exit(1)
     
     with open('.env', 'r') as f:
@@ -34,7 +34,7 @@ def load_env():
 config = load_env()
 ADMIN_SERVICE_URL = config.get('ADMIN_SERVICE_URL', 'http://localhost:3001')
 CUSTOMER_SERVICE_URL = config.get('CUSTOMER_SERVICE_URL', 'http://localhost:3000')
-PROXY_PORT = int(config.get('PROXY_PORT', '80'))
+PROXY_PORT = int(config.get('PROXY_PORT', '3001'))
 
 class ProxyHandler(BaseHTTPRequestHandler):
     def do_GET(self):
