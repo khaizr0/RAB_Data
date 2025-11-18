@@ -7,6 +7,7 @@ Standalone proxy server for routing traffic between Customer and Admin services
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.request
 import urllib.error
+from http.cookiejar import CookieJar
 import sys
 import os
 
@@ -68,7 +69,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(content_length) if content_length > 0 else None
             
-            # Create request
+            # Create request with cookie support
             req = urllib.request.Request(url, data=body, method=self.command)
             
             # Copy ALL headers including cookies
@@ -76,8 +77,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 if key.lower() not in ['host']:
                     req.add_header(key, value)
             
-            # Send request and get response
-            with urllib.request.urlopen(req, timeout=30) as response:
+            # Use opener with cookie support
+            opener = urllib.request.build_opener()
+            with opener.open(req, timeout=30) as response:
                 content = response.read()
                 content_type = response.headers.get('Content-Type', '')
                 
