@@ -50,11 +50,16 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.proxy_request()
     
     def proxy_request(self):
-        # Determine target based on path
-        if self.path.startswith('/admin') or self.path.startswith('/employee'):
+        # Determine target and path prefix
+        if self.path.startswith('/admin'):
             target = ADMIN_SERVICE_URL
+            prefix = 'admin'
+        elif self.path.startswith('/employee'):
+            target = ADMIN_SERVICE_URL
+            prefix = 'employee'
         else:
             target = CUSTOMER_SERVICE_URL
+            prefix = None
         
         url = target + self.path
         
@@ -73,12 +78,23 @@ class ProxyHandler(BaseHTTPRequestHandler):
             
             # Send request and get response
             with urllib.request.urlopen(req, timeout=30) as response:
+                content = response.read()
+                content_type = response.headers.get('Content-Type', '')
+                
+                # Rewrite HTML content to fix static file paths
+                if prefix and 'text/html' in content_type:
+                    content = content.decode('utf-8', errors='ignore')
+                    content = content.replace('"/Public/', f'"/{prefix}/Public/')
+                    content = content.replace("'/Public/", f"'/{prefix}/Public/")
+                    content = content.encode('utf-8')
+                
                 self.send_response(response.status)
                 for key, value in response.headers.items():
-                    if key.lower() not in ['connection', 'transfer-encoding']:
+                    if key.lower() not in ['connection', 'transfer-encoding', 'content-length']:
                         self.send_header(key, value)
+                self.send_header('Content-Length', len(content))
                 self.end_headers()
-                self.wfile.write(response.read())
+                self.wfile.write(content)
         
         except urllib.error.HTTPError as e:
             self.send_response(e.code)
