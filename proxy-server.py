@@ -71,9 +71,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
             # Create request
             req = urllib.request.Request(url, data=body, method=self.command)
             
-            # Copy headers (skip host and connection)
+            # Copy ALL headers including cookies
             for key, value in self.headers.items():
-                if key.lower() not in ['host', 'connection']:
+                if key.lower() not in ['host']:
                     req.add_header(key, value)
             
             # Send request and get response
@@ -89,8 +89,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     content = content.encode('utf-8')
                 
                 self.send_response(response.status)
+                # Forward ALL response headers including Set-Cookie
                 for key, value in response.headers.items():
-                    if key.lower() not in ['connection', 'transfer-encoding', 'content-length']:
+                    if key.lower() not in ['transfer-encoding', 'content-length']:
                         self.send_header(key, value)
                 self.send_header('Content-Length', len(content))
                 self.end_headers()
