@@ -72,7 +72,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             # Create request with cookie support
             req = urllib.request.Request(url, data=body, method=self.command)
             
-            # Copy ALL headers including cookies
+            # Copy headers, modify Cookie for admin/employee routes
             for key, value in self.headers.items():
                 if key.lower() not in ['host']:
                     req.add_header(key, value)
@@ -93,12 +93,21 @@ class ProxyHandler(BaseHTTPRequestHandler):
                     content = content.encode('utf-8')
                 
                 self.send_response(response.status)
-                # Forward ALL response headers including Set-Cookie
+                # Forward headers, modify Set-Cookie for proper path
                 for key, value in response.headers.items():
                     if key.lower() not in ['transfer-encoding', 'content-length']:
-                        self.send_header(key, value)
                         if key.lower() == 'set-cookie':
-                            print(f'[DEBUG] Sending Set-Cookie: {value[:50]}...')
+                            # Remove Path and Domain restrictions from cookie
+                            cookie_parts = []
+                            for part in value.split(';'):
+                                part = part.strip()
+                                if not part.lower().startswith('path=') and not part.lower().startswith('domain='):
+                                    cookie_parts.append(part)
+                            # Add Path=/ to make cookie work for all routes
+                            cookie_parts.append('Path=/')
+                            value = '; '.join(cookie_parts)
+                            print(f'[DEBUG] Modified Set-Cookie: {value[:80]}...')
+                        self.send_header(key, value)
                 self.send_header('Content-Length', len(content))
                 self.end_headers()
                 self.wfile.write(content)
