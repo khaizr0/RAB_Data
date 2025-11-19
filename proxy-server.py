@@ -33,7 +33,7 @@ def load_env():
     return config
 
 config = load_env()
-ADMIN_SERVICE_URL = config.get('ADMIN_SERVICE_URL', 'http://localhost:3001')
+ADMIN_SERVICE_URL = config.get('ADMIN_SERVICE_URL')
 CUSTOMER_SERVICE_URL = config.get('CUSTOMER_SERVICE_URL', 'http://localhost:3000')
 PROXY_PORT = int(config.get('PROXY_PORT', '3001'))
 
@@ -76,6 +76,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
             for key, value in self.headers.items():
                 if key.lower() not in ['host']:
                     req.add_header(key, value)
+                    if key.lower() == 'cookie':
+                        print(f'[DEBUG] Forwarding Cookie: {value[:50]}...')
             
             # Use opener with cookie support
             opener = urllib.request.build_opener()
@@ -95,6 +97,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
                 for key, value in response.headers.items():
                     if key.lower() not in ['transfer-encoding', 'content-length']:
                         self.send_header(key, value)
+                        if key.lower() == 'set-cookie':
+                            print(f'[DEBUG] Sending Set-Cookie: {value[:50]}...')
                 self.send_header('Content-Length', len(content))
                 self.end_headers()
                 self.wfile.write(content)
